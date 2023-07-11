@@ -1,0 +1,26 @@
+{
+  "extends": "@tsconfig/react-native/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "auth": ["./src/auth"],
+      "auth/*": ["./src/auth/*"],
+      "colors": ["./src/colors"],
+      "colors/*": ["./src/colors/*"],
+      "components": ["./src/components"],
+      "components/*": ["./src/components/*"],
+      "enums": ["./src/enums"],
+      "enums/*": ["./src/enums/*"],
+      "hooks": ["./src/hooks"],
+      "hooks/*": ["./src/hooks/*"],
+      "pages": ["./src/pages"],
+      "pages/*": ["./src/pages/*"],
+      "themes": ["./src/themes"],
+      "themes/*": ["./src/themes/*"],
+      "types": ["./src/types"],
+      "types/*": ["./src/types/*"],
+      "validations": ["./src/validations"],
+      "validations/*": ["./src/validations/*"]
+    }
+  },
+  "include": ["App.tsx", "./src/**/*"]
+}
