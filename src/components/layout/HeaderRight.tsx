@@ -10,7 +10,8 @@ import {useQueryClient} from '@tanstack/react-query';
 import {colors} from 'colors';
 
 export function HeaderRight({navigation}: DrawerNavigationProp<'Header'>) {
-  const {data: user} = useUser();
+  const {data: user, isLoading} = useUser();
+  console.log(user, isLoading);
   const {data: userLevel} = useUserLevel();
 
   const [visible, setVisible] = useState(false);

@@ -6,13 +6,12 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import axios from 'axios';
 import {io} from 'socket.io-client';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {signOut, useSession} from 'auth';
+import {fetchAllowLocal, signOut, useSession} from 'auth';
 import {WebSocketContext} from '.';
 import {addEventListeners} from './listeners';
-import {ClientSocket, RootStackParamList} from 'types';
+import {ClientSocket, DomainInfo, RootStackParamList} from 'types';
 import {GARAGE_STATE_QUERY_KEY} from 'hooks';
 import {GarageState} from 'enums';
 import {NavigationProp, useNavigation} from '@react-navigation/native';
@@ -58,18 +57,27 @@ export function WebSocketProvider({children}: PropsWithChildren) {
   const {mutate: connectWebsocket} = useMutation(
     ['socket'],
     async () => {
-      const domain = queryClient.getQueryData<string>(['domain']);
+      const domain = queryClient.getQueryData<DomainInfo>(['domain']);
+      if (!domain?.usedDomain) throw new Error('No domain found');
       const cookie = await AsyncStorage.getItem('cookie');
       const cookies = `token=${await AsyncStorage.getItem('csrf')}; ${cookie}`;
-      await axios.post(`${domain}/api/socket`, {
-        headers: {
+      await fetchAllowLocal(queryClient).fetch(
+        'POST',
+        `${
+          // @TODO: Build my own library to allow for ignoring SSL errors
+          // If the domain is trusted, remove the https://
+          domain.isTrusted
+            ? `http://${domain.usedDomain.substring(8)}`
+            : `${domain.usedDomain}`
+        }/api/socket`,
+        {
           Accept: '*/*',
           'Accept-Encoding': 'gzip, deflate, br',
           Connection: 'keep-alive',
           cookie: cookies,
           host: 'http://localhost',
         },
-      });
+      );
     },
     {
       onSuccess: () => {
@@ -104,8 +112,21 @@ export function WebSocketProvider({children}: PropsWithChildren) {
   }, [navigation, queryClient, setSession]);
 
   const socketInitializer = useCallback(() => {
-    const domain = queryClient.getQueryData<string>(['domain']);
-    const socket: ClientSocket = io(`${domain}`);
+    const domain = queryClient.getQueryData<DomainInfo>(['domain']);
+    if (!domain?.usedDomain) throw new Error('No domain found');
+    const socket: ClientSocket = io(
+      // @TODO: Build my own library to allow for ignoring SSL errors
+      // If the domain is trusted, remove the https://
+      domain.isTrusted
+        ? `http://${domain.usedDomain.substring(8)}`
+        : `${domain.usedDomain}`,
+      {
+        rejectUnauthorized: false,
+      },
+    );
+    socket.on('connect_error', error => {
+      console.log(error.message);
+    });
     socket.on('connect', () => {
       addEventListeners(socket, queryClient);
 

@@ -1,8 +1,9 @@
-import axios from 'axios';
 import {getCsrf} from './util';
 import {SessionValue} from 'components';
 import type {QueryClient} from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {fetchAllowLocal} from './fetchAllowLocal';
+import {DomainInfo} from 'types';
 
 export async function signOut(
   setSession: React.Dispatch<React.SetStateAction<SessionValue>>,
@@ -10,24 +11,34 @@ export async function signOut(
 ) {
   try {
     const csrf = await getCsrf(queryClient);
-    const domain = queryClient.getQueryData<string>(['domain']);
-    await axios.post(
-      `${domain}/api/auth/signout`,
+    const domain = queryClient.getQueryData<DomainInfo>(['domain']);
+    if (!domain) throw new Error('No domain set');
+    const credentials = {
+      csrfToken: csrf,
+      callbackUrl: 'http://localhost/home',
+      json: true,
+    };
+    const formBody: string[] = [];
+    for (let property in credentials) {
+      let encodedKey = encodeURIComponent(property);
+      let encodedValue = encodeURIComponent(
+        credentials[property as keyof typeof credentials],
+      );
+      formBody.push(encodedKey + '=' + encodedValue);
+    }
+    const cookies = (await AsyncStorage.getItem('cookie')) ?? '';
+    await fetchAllowLocal(queryClient).fetch(
+      'POST',
+      `${domain.usedDomain}/api/auth/signout`,
       {
-        csrfToken: csrf,
-        json: true,
-        callbackUrl: 'http://localhost/home',
+        Accept: '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        cookie: cookies,
       },
-      {
-        headers: {
-          Accept: '*/*',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          cookie: `next-auth.csrf-token=${csrf};`,
-        },
-      },
+      formBody.join('&'),
     );
     await AsyncStorage.removeItem('session');
-    queryClient.clear();
+    queryClient.setQueryData(['domain'], domain);
     setSession({data: null, status: 'loggingOut'});
   } catch (error) {
     console.log('Logout failed');

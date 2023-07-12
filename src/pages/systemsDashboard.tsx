@@ -29,14 +29,8 @@ export function SystemsDashboard({
         await axios.get<{ip: string}>('https://api.ipify.org/?format=json')
       ).data.ip;
       const ipAddresses = await getIpAddressesForHostname(domain);
-      console.log(
-        currentPublicIp,
-        ipAddresses,
-        ipAddresses.includes(currentPublicIp),
-      );
       if (ipAddresses.includes(currentPublicIp)) usedDomain = 'garage.local';
     }
-    console.log(domain, usedDomain);
     usedDomain = `${
       shouldUseHttp(domain) ? 'http://' : 'https://'
     }${usedDomain}`;
@@ -45,9 +39,8 @@ export function SystemsDashboard({
       usedDomain,
       isTrusted: false,
     });
-    console.log('DOMAIN', domain, usedDomain);
     if (usedDomain === 'https://garage.local')
-      validateSslDomain(domain, usedDomain);
+      await validateSslDomain(queryClient, domain, usedDomain);
     navigation.navigate('Login');
   };
 
