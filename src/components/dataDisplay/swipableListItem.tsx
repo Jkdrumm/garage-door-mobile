@@ -12,6 +12,7 @@ import {Trash} from 'react-native-feather';
 import {useColorModeValue} from 'hooks';
 import {DomainListItem} from 'types';
 import {useTheme} from '@react-navigation/native';
+import {LoadingIndicator} from './LoadingIndicator';
 
 export type SwipeableListItemProps = {
   item: DomainListItem;
@@ -26,6 +27,7 @@ export function SwipeableListItem({
   onPress,
   onDelete,
 }: SwipeableListItemProps) {
+  console.log(item);
   const swipeable = useRef(new Animated.ValueXY()).current;
   let previousDx = useRef(0).current;
   let currentSwipePosition = useRef(0).current;
@@ -102,8 +104,14 @@ export function SwipeableListItem({
             backgroundColor: theme.colors.background,
           },
         ]}>
-        <Text style={{color: textColor}}>{item.deviceName}</Text>
-        <Text style={{color: textColor}}>{item.domain}</Text>
+        <View>
+          <Text style={{color: textColor}}>{item.deviceName}</Text>
+          <Text style={{color: textColor}}>{item.domain}</Text>
+        </View>
+        <LoadingIndicator
+          isLoading={item.isLoading ?? false}
+          isError={item.isError ?? false}
+        />
       </Animated.View>
     </View>
   );
@@ -116,9 +124,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   swipeableContainer: {
-    // backgroundColor: colors.gray[900],
     paddingHorizontal: 20,
     paddingVertical: 15,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   deleteBox: {
     position: 'absolute',

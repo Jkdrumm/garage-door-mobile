@@ -1,4 +1,4 @@
-import {View, FlatList, StyleSheet} from 'react-native';
+import {View, FlatList, RefreshControl, StyleSheet} from 'react-native';
 import {getIpAddressesForHostname} from 'react-native-dns-lookup';
 import NetInfo from '@react-native-community/netinfo';
 import {FAB} from 'react-native-paper';
@@ -8,16 +8,38 @@ import {colors} from 'colors';
 import {DomainInfo, DomainListItem, StackNavigationProp} from 'types';
 import {shouldUseHttp, validateIpAddress} from 'validations';
 import {SwipeableListItem} from 'components';
-import {useDeleteDomain, useDomainList} from 'hooks';
+import {
+  DOMAIN_LIST_QUERY_KEY,
+  /* DOMAIN_LIST_QUERY_KEY, */ useDeleteDomain,
+  useDomainList,
+} from 'hooks';
 import axios from 'axios';
 import {validateSslDomain} from 'auth';
+// import {useEffect} from 'react';
 
 export function SystemsDashboard({
   navigation,
 }: StackNavigationProp<'SystemsDashboard'>) {
   const queryClient = useQueryClient();
 
-  const {data: domains} = useDomainList();
+  // useEffect(() => {
+  //   setTimeout(
+  //     () =>
+  //       queryClient.setQueryData<DomainListItem[]>(
+  //         [DOMAIN_LIST_QUERY_KEY],
+  //         prevData => {
+  //           const newData = prevData?.map(prevItem => ({
+  //             ...prevItem,
+  //             isLoading: false,
+  //           }));
+  //           return newData;
+  //         },
+  //       ),
+  //     3000,
+  //   );
+  // }, [queryClient]);
+
+  const {data: domains, isLoading: isLoadingDomains} = useDomainList();
   const {mutate: deleteDomain} = useDeleteDomain();
 
   // Function to handle the system item click
@@ -64,6 +86,14 @@ export function SystemsDashboard({
         data={domains ?? []}
         keyExtractor={item => item.domain}
         renderItem={renderSystemItem}
+        refreshControl={
+          <RefreshControl
+            onRefresh={() =>
+              queryClient.invalidateQueries([DOMAIN_LIST_QUERY_KEY])
+            }
+            refreshing={isLoadingDomains}
+          />
+        }
       />
       <FAB style={styles.fab} icon={PlusIcon} onPress={handleFABClick} />
     </View>
